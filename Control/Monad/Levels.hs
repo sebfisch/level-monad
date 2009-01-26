@@ -14,10 +14,10 @@
 -- The implementation is inspired by Mike Spivey and Silvija Seres:
 -- cf. Chapter 9 of the book 'The Fun of Programming'.
 -- 
--- Warning: @Levels@ is only a monad when the results of
--- @breadthFirstSearch@ or @levelDiagonalisation@ are interpreted as a
--- set; that is, a valid transformation according to the monad laws
--- may change the order of the results.
+-- Warning: @Levels@ is only a monad when the results of the
+-- enumeration functions are interpreted as a set, i.e., a valid
+-- transformation according to the monad laws may change the order of
+-- the results.
 
 module Control.Monad.Levels ( 
 
