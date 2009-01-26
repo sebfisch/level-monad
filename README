@@ -12,7 +12,7 @@ action
     return 1 `mplus` ((return 2 `mplus` return 3) `mplus` return 4)
 
 the result 1 is in the second level, 4 in the third, and the results 2
-nd 3 are in the forth level. This is apparent from the following
+and 3 are in the forth level. This is apparent from the following
 representation of this monadic action:
 
                `mplus`
