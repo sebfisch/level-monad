@@ -15,7 +15,7 @@
 -- cf. Chapter 9 of the book 'The Fun of Programming'.
 -- 
 -- Warning: @Levels@ is only a monad when the results of the
--- enumeration functions are interpreted as a set, i.e., a valid
+-- enumeration functions are interpreted as a multiset, i.e., a valid
 -- transformation according to the monad laws may change the order of
 -- the results.
 
