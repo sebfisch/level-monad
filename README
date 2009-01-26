@@ -1,0 +1,35 @@
+Non-Determinism Monad for Level-Wise Search
+===========================================
+
+This Haskell library provides an implementation of the MonadPlus type
+class that enumerates the levels of the search space and allows to
+implement breadth-first search.
+
+A search space is formed by calls to `return` and `mplus` yielding a
+search tree with solutions in its leaves. For example, in the monadic
+action
+
+    return 1 `mplus` ((return 2 `mplus` return 3) `mplus` return 4)
+
+The result 1 is in the second level, 4 in the third, and the results 2
+nd 3 are in the forth level. This is apparent from the following
+representation of this monadic action:
+
+               `mplus`
+             /         \
+       return 1          `mplus`
+                       /         \
+                   `mplus`      return 4
+                 /         \
+             return 2    return 3
+
+However, the implementation does not build this tree structure as a
+data term but constructs its levels directly.
+
+The library provides an operation to get the list of levels from a
+non-deterministic computations. The nth element in this list contains
+the results of the computation that are found on the nth level of the
+computation. Hence, using `concat` to merge the levels, yields
+breadth-first search, but different combination function
+(e.g. diagonalisation) can be applied too.
+
