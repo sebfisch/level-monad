@@ -70,7 +70,7 @@ instance Monad Levels
   fail _ = Levels []
 
 bind :: [[a]] -> (a -> [[b]]) -> [[b]]
-x `bind` f = map concat (diagonals (map (foldr zipConc [] . map f) x))
+bind x f = map concat (diagonals (map (foldr zipConc [] . map f) x))
 
 instance MonadPlus Levels
  where
