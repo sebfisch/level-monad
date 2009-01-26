@@ -21,7 +21,7 @@
 
 module Control.Monad.Levels ( 
 
-  Levels, levels, breadthFirstSearch --, levelDiagonalisation
+  Levels, levels, breadthFirstSearch, levelDiagonalisation
 
   ) where
 
@@ -30,13 +30,36 @@ import Control.Monad
 -- | 
 -- Non-Deterministic computations of type @Levels a@ can be searched
 -- level-wise.
-newtype Levels a = Levels { levels :: [[a]] }
+newtype Levels a = Levels { 
+
+  -- |
+  -- The function @levels@ yields the results of a non-deterministic
+  -- computation grouped in levels.
+  levels :: [[a]]
+
+  }
 
 -- |
 -- The function @breadthFirstSearch@ enumerates the results of a
 -- non-deterministic computation in breadth-first order.
 breadthFirstSearch :: Levels a -> [a]
 breadthFirstSearch = concat . levels
+
+-- |
+-- The function @levelDiagonalisation@ enumerates the results of a
+-- non-deterministic computation by diagonally interleaving the
+-- results of all levels.
+levelDiagonalisation :: Levels a -> [a]
+levelDiagonalisation = concat . diagonals . levels
+
+diagonals :: [[a]] -> [[a]]
+diagonals []       = []
+diagonals (xs:xss) = zipConc [[x] | x <- xs] ([] : diagonals xss)
+
+zipConc :: [[a]] -> [[a]] -> [[a]]
+zipConc []       yss      = yss
+zipConc xss      []       = xss
+zipConc (xs:xss) (ys:yss) = (xs++ys) : zipConc xss yss
 
 instance Monad Levels
  where
@@ -48,15 +71,6 @@ instance Monad Levels
 
 bind :: [[a]] -> (a -> [[b]]) -> [[b]]
 x `bind` f = map concat (diagonals (map (foldr zipConc [] . map f) x))
-
-diagonals :: [[a]] -> [[a]]
-diagonals []       = []
-diagonals (xs:xss) = zipConc [[x] | x <- xs] ([] : diagonals xss)
-
-zipConc :: [[a]] -> [[a]] -> [[a]]
-zipConc []     ys     = ys
-zipConc xs     []     = xs
-zipConc (x:xs) (y:ys) = (x++y) : zipConc xs ys
 
 instance MonadPlus Levels
  where
