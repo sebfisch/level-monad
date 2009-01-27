@@ -1,6 +1,6 @@
 -- |
 -- Module      : Control.Monad.Levels
--- Author      : Sebastian Fischer
+-- Copyright   : Sebastian Fischer
 -- License     : PublicDomain
 -- 
 -- Maintainer  : Sebastian Fischer (sebf@informatik.uni-kiel.de)
