@@ -1,5 +1,5 @@
 Name:          level-monad
-Version:       0.1
+Version:       0.2
 Cabal-Version: >= 1.6
 Synopsis:      Non-Determinism Monad for Level-Wise Search
 Description:   This Haskell library provides an implementation of the
