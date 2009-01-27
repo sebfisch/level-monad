@@ -30,6 +30,6 @@ The library provides an operation to get the list of levels from a
 non-deterministic computation. The nth element in this list contains
 the results of the computation that are found on the nth level of the
 computation. Hence, using `concat` to merge the levels, yields
-breadth-first search, but different combination function
+breadth-first search, but different combination functions
 (e.g. diagonalisation) can be applied too.
 
