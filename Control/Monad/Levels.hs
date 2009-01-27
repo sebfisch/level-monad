@@ -1,7 +1,7 @@
 -- |
 -- Module      : Control.Monad.Levels
--- Copyright   : Sebastian Fischer 2009
--- License     : BSD3
+-- Author      : Sebastian Fischer
+-- License     : PublicDomain
 -- 
 -- Maintainer  : Sebastian Fischer (sebf@informatik.uni-kiel.de)
 -- Stability   : experimental
