@@ -67,6 +67,8 @@ instance Monad Levels
 
   Levels x >>= f = Levels (x `bind` (levels . f))
 
+  fail _ = Levels []
+
 bind :: [[a]] -> (a -> [[b]]) -> [[b]]
 bind x f = map concat (diagonals (map (foldr zipConc [] . map f) x))
 
