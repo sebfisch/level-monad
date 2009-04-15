@@ -21,7 +21,11 @@
 
 module Control.Monad.Levels ( 
 
-  Levels, levels, breadthFirstSearch, levelDiagonalisation
+  Levels, levels, breadthFirstSearch, 
+
+  DepthBound, iterLevels, iterativeDeepening,
+
+  diagonals
 
   ) where
 
@@ -45,22 +49,6 @@ newtype Levels a = Levels {
 breadthFirstSearch :: Levels a -> [a]
 breadthFirstSearch = concat . levels
 
--- |
--- The function @levelDiagonalisation@ enumerates the results of a
--- non-deterministic computation by diagonally interleaving the
--- results of all levels.
-levelDiagonalisation :: Levels a -> [a]
-levelDiagonalisation = concat . diagonals . levels
-
-diagonals :: [[a]] -> [[a]]
-diagonals []       = []
-diagonals (xs:xss) = zipConc [[x] | x <- xs] ([] : diagonals xss)
-
-zipConc :: [[a]] -> [[a]] -> [[a]]
-zipConc []       yss      = yss
-zipConc xss      []       = xss
-zipConc (xs:xss) (ys:yss) = (xs++ys) : zipConc xss yss
-
 instance Monad Levels
  where
   return x = Levels [[x]]
@@ -78,3 +66,44 @@ instance MonadPlus Levels
 
   Levels xs `mplus` Levels ys = Levels ([] : zipConc xs ys)
 
+-- |
+-- The type @DepthBound@ represents computations with a bounded
+-- depth. It's monad instances implements iterative deepening.
+newtype DepthBound a = DepthBound { (!) :: Int -> [(a,Int)] }
+
+instance Monad DepthBound
+ where
+  return x = DepthBound (\d -> [(x,d)])
+  a >>= f  = DepthBound (\d -> [ y | (x,d') <- a!d, y <- f x!d' ])
+
+instance MonadPlus DepthBound
+ where
+  mzero       = DepthBound (const [])
+  a `mplus` b = DepthBound (\d -> do guard (d>0)
+                                     let d' = d-1
+                                     (a!d') `mplus` (b!d'))
+
+-- |
+-- The function @iterLevels@ computes the levels of a depth bound
+-- computation using iterative deepening.
+iterLevels :: DepthBound a -> Levels a
+iterLevels a = Levels [[ x | (x,0) <- a!d ] | d <- [0..]]
+
+-- |
+-- The function @iterativeDeepening@ enumerates the results of a
+-- non-deterministic computations using iterative deepening.
+iterativeDeepening :: DepthBound a -> [a]
+iterativeDeepening = concat . levels . iterLevels
+
+-- | 
+-- The function @diagonals@ enumarates the entries of a matrix
+-- diagonally. The matrix may contain an infinite number of infinite
+-- rows.
+diagonals :: [[a]] -> [[a]]
+diagonals []       = []
+diagonals (xs:xss) = zipConc [[x] | x <- xs] ([] : diagonals xss)
+
+zipConc :: [[a]] -> [[a]] -> [[a]]
+zipConc []       yss      = yss
+zipConc xss      []       = xss
+zipConc (xs:xss) (ys:yss) = (xs++ys) : zipConc xss yss
