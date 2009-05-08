@@ -75,6 +75,7 @@ instance Monad DepthBound
  where
   return x = DepthBound (\d -> [(x,d)])
   a >>= f  = DepthBound (\d -> [ y | (x,d') <- a!d, y <- f x!d' ])
+  fail _   = DepthBound (const [])
 
 instance MonadPlus DepthBound
  where
