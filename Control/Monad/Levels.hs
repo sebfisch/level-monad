@@ -12,99 +12,68 @@
 -- implement breadth-first search.
 -- 
 -- The implementation is inspired by Mike Spivey and Silvija Seres:
--- cf. Chapter 9 of the book 'The Fun of Programming'.
+-- cf. Chapter 9 of the book 'The Fun of Programming'. The
+-- implementation of iterative deepening depth-first is, however,
+-- significantly simpler thanks to the use of a continuation monad.
 -- 
 -- Warning: @Levels@ is only a monad when the results of the
 -- enumeration functions are interpreted as a multiset, i.e., a valid
 -- transformation according to the monad laws may change the order of
 -- the results.
 
-module Control.Monad.Levels ( 
+module Control.Monad.Levels ( bfs, idfs, idfsBy ) where
 
-  Levels, levels, breadthFirstSearch, 
+import Data.Monoid
+import Data.FMList
 
-  DepthBound, iterLevels, iterativeDeepening,
 
-  diagonals
+-- | The function @bfs@ enumerates the results of a
+-- non-deterministic computation in breadth-first order.
+bfs :: FMList a -> [a]
+bfs a = runLevels (unFM a yield)
+ where yield x = Levels [singleton x]
 
-  ) where
-
-import Control.Monad
-
--- | 
 -- Non-Deterministic computations of type @Levels a@ can be searched
 -- level-wise.
-newtype Levels a = Levels { 
+newtype Levels a = Levels { levels :: [FMList a] }
 
-  -- |
-  -- The function @levels@ yields the results of a non-deterministic
-  -- computation grouped in levels.
-  levels :: [[a]]
+-- Concatenates levels amd yields result as list. 
+runLevels :: Levels a -> [a]
+runLevels = toList . foldr append empty . levels
 
-  }
+instance Monoid (Levels a) where
+  mempty        = Levels []
+  a `mappend` b = Levels (empty : merge (levels a) (levels b))
 
--- |
--- The function @breadthFirstSearch@ enumerates the results of a
--- non-deterministic computation in breadth-first order.
-breadthFirstSearch :: Levels a -> [a]
-breadthFirstSearch = concat . levels
+-- like 'zipWith append' without cutting the longer list
+merge :: [FMList a] -> [FMList a] -> [FMList a]
+merge []      ys    = ys
+merge xs      []    = xs
+merge (x:xs) (y:ys) = append x y : merge xs ys
 
-instance Monad Levels
- where
-  return x = Levels [[x]]
+-- | The function @idfs@ computes the levels of a depth bound
+-- computation using iterative deepening depth-first search. Unlike
+-- breadth-first search it runs in constant space but usually takes a
+-- bit longer, depending on how the depth limit is increased. Don't
+-- use this algorithm if you know that there is only a finite number
+-- of results because it will continue trying larger depth limits
+-- without recognizing that there are no more solutions.
+idfs :: FMList a -> [a]
+idfs = idfsBy 100
 
-  Levels x >>= f = Levels (x `bind` (levels . f))
+-- | The function @idfsBy@ computes the levels of a depth bound
+-- computation using iterative deepening depth-first search
+-- incrementing the depth limit between searches using the given
+-- number of steps.
+idfsBy :: Int -> FMList a -> [a]
+idfsBy n a = toList $ foldr append empty [ unFM a yield ! d | d <- [0,n..] ]
+ where yield x = DepthBound (\d -> if d<n then singleton x else empty)
 
-  fail _ = Levels []
+-- The type @DepthBound@ represents computations with a bounded depth
+-- to iterative deepening search.
+newtype DepthBound a = DepthBound { (!) :: Int -> FMList a }
 
-bind :: [[a]] -> (a -> [[b]]) -> [[b]]
-bind x f = map concat (diagonals (map (foldr zipConc [] . map f) x))
-
-instance MonadPlus Levels
- where
-  mzero = Levels []
-
-  Levels xs `mplus` Levels ys = Levels ([] : zipConc xs ys)
-
--- |
--- The type @DepthBound@ represents computations with a bounded
--- depth. It's monad instances implements iterative deepening.
-newtype DepthBound a = DepthBound { (!) :: Int -> [(a,Int)] }
-
-instance Monad DepthBound
- where
-  return x = DepthBound (\d -> [(x,d)])
-  a >>= f  = DepthBound (\d -> [ y | (x,d') <- a!d, y <- f x!d' ])
-  fail _   = DepthBound (const [])
-
-instance MonadPlus DepthBound
- where
-  mzero       = DepthBound (const [])
-  a `mplus` b = DepthBound (\d -> do guard (d>0)
-                                     let d' = d-1
-                                     (a!d') `mplus` (b!d'))
-
--- |
--- The function @iterLevels@ computes the levels of a depth bound
--- computation using iterative deepening.
-iterLevels :: DepthBound a -> Levels a
-iterLevels a = Levels [[ x | (x,0) <- a!d ] | d <- [0..]]
-
--- |
--- The function @iterativeDeepening@ enumerates the results of a
--- non-deterministic computations using iterative deepening.
-iterativeDeepening :: DepthBound a -> [a]
-iterativeDeepening = concat . levels . iterLevels
-
--- | 
--- The function @diagonals@ enumarates the entries of a matrix
--- diagonally. The matrix may contain an infinite number of infinite
--- rows.
-diagonals :: [[a]] -> [[a]]
-diagonals []       = []
-diagonals (xs:xss) = zipConc [[x] | x <- xs] ([] : diagonals xss)
-
-zipConc :: [[a]] -> [[a]] -> [[a]]
-zipConc []       yss      = yss
-zipConc xss      []       = xss
-zipConc (xs:xss) (ys:yss) = (xs++ys) : zipConc xss yss
+instance Monoid (DepthBound a) where
+  mempty        = DepthBound (const empty)
+  a `mappend` b = DepthBound (\d -> if d==0 then empty
+                                    else append (a!(d-1)) (b!(d-1)))
