@@ -19,7 +19,7 @@ Stability:     experimental
 Extra-Source-Files: README
 
 Library
-  Build-Depends:    base, fmlist
+  Build-Depends:    base >= 3 && < 5, fmlist
   Exposed-Modules:  Control.Monad.Levels
   Ghc-Options:      -Wall -fno-full-laziness
 
