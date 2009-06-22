@@ -7,28 +7,32 @@
 -- Stability   : experimental
 -- Portability : portable
 -- 
--- This library provides an implementation of the MonadPlus type
--- class that enumerates the levels of the search space and allows to
--- implement breadth-first search.
+-- This library provides an implementation of the MonadPlus type class
+-- that enumerates the levels of the search space and allows to
+-- implement breadth-first search and iterative deepening depth-first
+-- search.
 -- 
 -- The implementation is inspired by Mike Spivey and Silvija Seres:
--- cf. Chapter 9 of the book 'The Fun of Programming'. The
--- implementation of iterative deepening depth-first is, however,
--- significantly simpler thanks to the use of a continuation monad.
+-- see Chapter 9 of the book 'The Fun of Programming' and the paper
+-- 'Algebras for Combinatorial Search'.
 -- 
--- Warning: @Levels@ is only a monad when the results of the
--- enumeration functions are interpreted as a multiset, i.e., a valid
--- transformation according to the monad laws may change the order of
--- the results.
-
+-- The implementation of breadth-first search is similar to the
+-- inspiring implementation but uses lists with constant-time
+-- concatenation to represent levels. The implementation of iterative
+-- deepening depth-first is simpler than the inspiring implementation
+-- thanks to the use of a continuation monad.
 module Control.Monad.Levels ( bfs, idfs, idfsBy ) where
 
 import Data.Monoid
 import Data.FMList
 
 
--- | The function @bfs@ enumerates the results of a
--- non-deterministic computation in breadth-first order.
+-- | The function @bfs@ enumerates the results of a non-deterministic
+-- computation using breadth-first search. The implementation does not
+-- guarantee that results are returned in any specific order but it
+-- does guarantee that every result is eventually enumerated. Due to
+-- the large memory requirements of breadth-first search you should
+-- use @idfs@ for expensive search.
 bfs :: FMList a -> [a]
 bfs a = runLevels (unFM a yield)
  where yield x = Levels [singleton x]
@@ -54,10 +58,13 @@ merge (x:xs) (y:ys) = append x y : merge xs ys
 -- | The function @idfs@ computes the levels of a depth bound
 -- computation using iterative deepening depth-first search. Unlike
 -- breadth-first search it runs in constant space but usually takes a
--- bit longer, depending on how the depth limit is increased. Don't
--- use this algorithm if you know that there is only a finite number
--- of results because it will continue trying larger depth limits
--- without recognizing that there are no more solutions.
+-- bit longer, depending on how the depth limit is increased. Use
+-- @idfsBy@ to control this. Don't use this algorithm if you know that
+-- there is only a finite number of results because it will continue
+-- trying larger depth limits without recognizing that there are no
+-- more solutions.  It can, however, produce results lazily: calling
+-- @take n . idfs@ terminates if the number of results is larger than
+-- @n@.
 idfs :: FMList a -> [a]
 idfs = idfsBy 100
 
